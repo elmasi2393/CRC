@@ -1,11 +1,6 @@
 ----------------------------------------------------------------------------------
--- Company: Universidad Tecnológica Nacional - Facultad Regional San Francisco
--- Engineer: Rinaudo, Facundo. Gatto, Maximiliano. Lenta, Maximiliano.
--- 
--- Create Date:    18:49:34 07/13/2020 
--- Design Name: Técnicas Digitales I. Trabajo Práctico N°3
 -- Module Name:    CRC - COMPORTAMIENTO 
--- Project Name: Diseño Circuito Generador CRC
+-- Project Name: DiseÃ±o Circuito Generador CRC
 
 -- Revision: 
 -- Revision 0.01 - File Created
@@ -20,66 +15,62 @@ use IEEE.STD_LOGIC_UNSIGNED.ALL;
 
 entity CRC is
 	GENERIC(M: INTEGER:=8;
-				N: INTEGER:=4);
+		N: INTEGER:=4);
 		
-		PORT(MENSAJE: IN STD_LOGIC_VECTOR(M-1 DOWNTO 0);	--MENSAJE DE 8 BITS
-				POLGEN: IN STD_LOGIC_VECTOR(N-1 DOWNTO 0);	--POLINOMIO GENERADOR 4 BITS
-				
-				BITSCOMP: OUT STD_LOGIC_VECTOR(N-2 DOWNTO 0);	--3 BITS DE COMPROBACIÓN
-				MENSBITSCOMP: OUT STD_LOGIC_VECTOR(M+N-2 DOWNTO 0));	--8 BITS MENSAJE DE ENTRADA + 3 BITS DE COMPROBACIÓN
+	PORT(MENSAJE: IN STD_LOGIC_VECTOR(M-1 DOWNTO 0);		--MENSAJE DE M BITS
+	     POLGEN: IN STD_LOGIC_VECTOR(N-1 DOWNTO 0);			--POLINOMIO GENERADOR N BITS
+	     BITSCOMP: OUT STD_LOGIC_VECTOR(N-2 DOWNTO 0);		--N-1 BITS DE COMPROBACIÃ“N
+	     MENSBITSCOMP: OUT STD_LOGIC_VECTOR(M+N-2 DOWNTO 0));	--M BITS MENSAJE DE ENTRADA + N-1 BITS DE COMPROBACIÃ“N
 end CRC;
 
 architecture COMPORTAMIENTO of CRC is
 
 begin
 	PROCESS(MENSAJE, POLGEN)
-		VARIABLE VAR1: STD_LOGIC_VECTOR(M+N-2 DOWNTO 0); --11 bits - 10 downto 0
-		VARIABLE VAR2: STD_LOGIC_VECTOR(N-1 DOWNTO 0); --Variables de 4 bits
+		VARIABLE VAR1: STD_LOGIC_VECTOR(M+N-2 DOWNTO 0); 	--Variable donde se almacena el mensaje entero
+		VARIABLE VAR2: STD_LOGIC_VECTOR(N-1 DOWNTO 0); 		--Variables de n bits
 		VARIABLE VAR3: STD_LOGIC_VECTOR(N-1 DOWNTO 0);
 		VARIABLE VAR4: STD_LOGIC_VECTOR(N-1 DOWNTO 0);
 		
 	BEGIN
-		VAR1(M+N-2 DOWNTO N-1):=MENSAJE(M-1 DOWNTO 0);	--ALMACENA EN LAS POSICIONES (10 DOWNTO 3) DEL VACTOR VAR1
-																			--LAS POSICIONES (7 DOWNTO 0) DEL VECTOR MENSAJE
+		VAR1(M+N-2 DOWNTO N-1):=MENSAJE(M-1 DOWNTO 0);	--Se copia el mensaje en los bits mas significativos
 		
-		FOR j IN N-2 DOWNTO 0 LOOP		--INICIALIZA LAS POSICIONES (2 DOWNTO 0) DEL VECTOR VAR1 EN CERO
+		FOR j IN N-2 DOWNTO 0 LOOP	--Agrega los 0 necesarios dependiendo de la longitud del polinomio
 			VAR1(j):='0';
 			END LOOP;
 			
-		VAR2:=POLGEN;	--ALMACENA LOS BITS DEL POLINOMIO GENERADOR EN EL VECTOR VAR2
+		VAR2:=POLGEN;	--Se copia el polinomio generador
 		
-		VAR3:=VAR1(M+N-2 DOWNTO M-1);		--ALMACENA LAS POSICIONES (10 DOWNTO 7) DEL VECTOR VAR1, EN EL VECTOR VAR3
-														--ES DECIR, LOS CUATRO BITS MAS SIGNIFICATIVOS EL MENSAJE
-		
+		VAR3:=VAR1(M+N-2 DOWNTO M-1);		--Almacenamos los bits iniciales para iniciar la comprobacion
+							--(Para este caso los 4 mas significativos ya que los primeros 3 deplazamientos no puede haber un 1 en el 
+							-- bit del mensaje que se compara con el bit mas significativo del polinomio)
+
+		--Se repite el proceso por la cantidad de bits del mensaje ya que los n bits ya fueron desplazados
 		FOR i IN M-1 DOWNTO 0 LOOP
-			IF(VAR3(N-1)='1') THEN		--ANALIZA SI EL BIT MAS SIGNIFICATIVO DEL VECTOR MENSAJE ES IGUAL A 1
-				VAR3:=VAR3 XOR VAR2;			--SI ES ASÍ, REALIZA LA OPERACIÓN XOR ENTRE LAS POSICIONES (3 DOWNTO 0) DE VAR3 
-														--Y LAS POSICIONES (3 DOWNTO 0) DEL POLINOMIO GENERADOR. 
-				ELSE											--DE LO CONTRARIO VAR3 PERMANECE SIN CAMBIOS
-					NULL;
-				
+			IF(VAR3(N-1)='1') THEN		--Analiza si el bit mas significativo del mensaje es 1
+				VAR3:=VAR3 XOR VAR2;	--Si es asi realiza la operacion XOR										
+			ELSE				--Sino continua el ciclo sin cambios
+				NULL;	
 			END IF;
 		
-		VAR4:=VAR3;	--ALMACENA VAR3 EN VAR 4
+		VAR4:=VAR3;
 		
-		VAR3(N-1 DOWNTO 1):=VAR4(N-2 DOWNTO 0);	--ALMACENA EN LAS POSICIONES (3 DOWNTO 1) DE VAR3 
+		VAR3(N-1 DOWNTO 1):=VAR4(N-2 DOWNTO 0);	--Se deplaza el mensaje
 																	--LAS POSICIONES (2 DOWNTO 0) DE VAR4 
-			IF(i=0) THEN
-				VAR3(0):='0';	--SI i=0 ENTONCES ASIGNA CERO A VAR3(0)
+			IF(i=0) THEN	--En caso de que llegue al fin de ciclo
+				VAR3(0):='0';	--Se agrega un 0 para rellenar la variable, pero no sera utilizado
 				
-				ELSE	--DE LO CONTRARIOASIGNA EL VALOR (i-1) A LA POSICIÓN VAR3(0)
+				ELSE		--Sino se agrega el siguiente bit
 					VAR3(0):=VAR1(i-1);
 				
 			END IF;
 			
 		END LOOP;
-		
-		BITSCOMP<=VAR3(N-1 DOWNTO 1);	--ASIGNA A BITSCOMP LAS POSICIONES (3 DOWNTO 0) DEL VECTOR VAR3
-		
-		MENSBITSCOMP(M+N-2 DOWNTO N-1)<=MENSAJE;	--ASIGNA A LAS POSICIONES (10 DOWNTO 3) LOS BITS CORRESPONDIENTES
-																	--AL MENSAJE QUE SE DESEA ENVIAR
-		MENSBITSCOMP(N-2 DOWNTO 0)<=VAR3(N-1 DOWNTO 1);	--Y A LAS POSICIONES (2 DOWNTO 0) LOS BITS CORRESPONDIENTES
-																			--A LAS POSICIONES (3 DOWNTO 1) DE VAR3
+		--Asignamos las salidas
+		BITSCOMP<=VAR3(N-1 DOWNTO 1);			--Solamente los n-1 bits mas altos de la variable 3 se usan, ya que la posicion 0 es la que rellenamos con un 0
+		MENSBITSCOMP(M+N-2 DOWNTO N-1)<=MENSAJE;	--Copiamos el mensaje														--AL MENSAJE QUE SE DESEA ENVIAR
+		MENSBITSCOMP(N-2 DOWNTO 0)<=VAR3(N-1 DOWNTO 1);	--y en las ultimas posiciones el CRC
+																			
 	END PROCESS;
 														
 end COMPORTAMIENTO;
